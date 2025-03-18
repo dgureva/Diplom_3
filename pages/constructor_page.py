@@ -3,6 +3,7 @@ from pages.base_page import BasePage
 from locators import ConstructorLocators
 import allure
 import data
+import time
 
 
 class ConstructorPage(BasePage):
@@ -60,13 +61,12 @@ class ConstructorPage(BasePage):
         self.click_element(ConstructorLocators.BUTTON_PLACE_ORDER)
 
     @allure.step('Оформить заказ')
-    def create_order(self, driver):
-        page = ConstructorPage(driver)
+    def create_order(self):
         if data.DRIVER_NAME == 'chrome':
-            page.drag_and_drop_ingredient(2, ConstructorLocators.DROP_ZONE_CONSTRUCTOR)
+            self.drag_and_drop_ingredient(2, ConstructorLocators.DROP_ZONE_CONSTRUCTOR)
         else:
-            page.drag_and_drop_ingredient_firefox(2, ConstructorLocators.DROP_ZONE_CONSTRUCTOR)
-        page.click_button_place_order()
+            self.drag_and_drop_ingredient_firefox(2, ConstructorLocators.DROP_ZONE_CONSTRUCTOR)
+        self.click_button_place_order()
 
     @allure.step('Дождаться появления окна с идентификатором заказа')
     def is_window_order_id_visible(self):
@@ -74,10 +74,13 @@ class ConstructorPage(BasePage):
 
     @allure.step('Дождаться изменения текста идентификатора заказа')
     def wait_for_id_to_change(self):
-        while True:
+        max_attempts = 10  # Максимальное количество попыток
+        for _ in range(max_attempts):  # Цикл с фиксированным количеством итераций
             new_value = self.get_text_from_element(ConstructorLocators.TEXT_IN_ORDER_ID)
             if new_value and new_value != "9999":
                 return f'0{new_value}'
+            time.sleep(1)  # Пауза перед следующей попыткой
+        raise Exception("Не удалось дождаться изменения текста идентификатора заказа.")
 
     @allure.step('Закрыть окно с id заказа')
     def close_window_order_id(self):

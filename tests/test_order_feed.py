@@ -1,9 +1,10 @@
 import allure
 from data import Url
+from pages.constructor_page import ConstructorPage
 from pages.order_feed_page import OrderFeedPage
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from pages.personal_account_page import PersonalAccountPage
+
+
 
 class TestOrderFeed:
 
@@ -16,8 +17,9 @@ class TestOrderFeed:
         assert element is not None
 
     @allure.title('Проверка отображения заказов из Истории заказов пользователя в Ленте заказов')
-    def test_check_show_orders_from_orders_history_on_order_feed(self, driver, personal_account):
+    def test_check_show_orders_from_orders_history_on_order_feed(self, driver):
         driver.get(Url.URL_ENTRANCE_PERSONAL_ACCOUNT)
+        personal_account = PersonalAccountPage(driver)
         page = OrderFeedPage(driver)
         personal_account.authorization()
         personal_account.go_to_personal_account()
@@ -28,46 +30,47 @@ class TestOrderFeed:
         assert element is not None
 
     @allure.title('Проверка увеличения счетчика Выполнено за все время при создании нового заказа')
-    def test_check_increment_counter_completed_for_all_time_when_creating_order(self, driver, personal_account, constructor):
+    def test_check_increment_counter_completed_for_all_time_when_creating_order(self, driver):
         driver.get(Url.URL_ENTRANCE_PERSONAL_ACCOUNT)
-        page = OrderFeedPage(driver)
+        personal_account = PersonalAccountPage(driver)
         personal_account.authorization()
+        page = OrderFeedPage(driver)
         page.go_to_order_feed()
         counter_before_order = page.get_text_from_counter_completed_for_all_time()
+        constructor = ConstructorPage(driver)
         constructor.go_to_constructor()
-        constructor.create_order(driver)
+        constructor.create_order()
         constructor.close_window_order_id()
         page.go_to_order_feed()
         counter_after_order = page.get_text_from_counter_completed_for_all_time()
         assert counter_after_order > counter_before_order
 
     @allure.title('Проверка увеличения счетчика Выполнено за сегодня при создании нового заказа')
-    def test_check_increment_counter_completed_for_today_when_creating_order(self, driver, personal_account, constructor):
+    def test_check_increment_counter_completed_for_today_when_creating_order(self, driver):
         driver.get(Url.URL_ENTRANCE_PERSONAL_ACCOUNT)
-        page = OrderFeedPage(driver)
+        personal_account = PersonalAccountPage(driver)
         personal_account.authorization()
+        page = OrderFeedPage(driver)
         page.go_to_order_feed()
         counter_before_order = page.get_text_from_counter_completed_for_today()
+        constructor = ConstructorPage(driver)
         constructor.go_to_constructor()
-        constructor.create_order(driver)
+        constructor.create_order()
         constructor.close_window_order_id()
         page.go_to_order_feed()
         counter_after_order = page.get_text_from_counter_completed_for_today()
         assert counter_after_order > counter_before_order
 
     @allure.title('Проверка появления заказа в разделе В работе после его оформления')
-    def test_check_show_order_in_work_when_creating_order(self, driver, personal_account, constructor):
+    def test_check_show_order_in_work_when_creating_order(self, driver):
         driver.get(Url.URL_ENTRANCE_PERSONAL_ACCOUNT)
         page = OrderFeedPage(driver)
+        personal_account = PersonalAccountPage(driver)
         personal_account.authorization()
-        constructor.create_order(driver)
+        constructor = ConstructorPage(driver)
+        constructor.create_order()
         order_id = constructor.wait_for_id_to_change()
         constructor.close_window_order_id()
         page.go_to_order_feed()
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH,
-                                            f".//p[contains(@class, 'text text_type_digits-default') and contains(text(), '{order_id}')]"))
-        )
-        order_in_work = driver.find_element(By.XPATH,
-                                            f".//p[contains(@class, 'text text_type_digits-default') and contains(text(), '{order_id}')]")
-        assert order_in_work.is_displayed(), f"Элемент с заказом {order_id} не отображается в ленте."
+        order_id_in_work = page.wait_for_text_in_work_to_change()
+        assert order_id == order_id_in_work
